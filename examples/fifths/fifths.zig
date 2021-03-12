@@ -27,11 +27,11 @@ fn instantiate (
 ) anyerror!void {
     var feat = lv2.queryMissingFeature(features, &[_]lv2.Feature{
         .{
-            .name = "http://lv2plug.in/ns/ext/log#log",
+            .uri = "http://lv2plug.in/ns/ext/log#log",
             .required = false
         },
         .{
-            .name = "http://lv2plug.in/ns/ext/urid#map",
+            .uri = "http://lv2plug.in/ns/ext/urid#map",
             .required = true
         }
     });
