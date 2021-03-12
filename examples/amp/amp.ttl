@@ -4,10 +4,11 @@
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#>.
 @prefix units: <http://lv2plug.in/ns/extensions/units#>.
 
-<http://augustera.me/example>
+<http://augustera.me/amp>
   a lv2:Plugin, lv2:AmplifierPlugin;
-  lv2:binary <example.dll>;
-  doap:name "zig-lv2 plugin";
+  lv2:binary <amp.dll>;
+  
+  doap:name "Amp";
   doap:license <http://usefulinc.com/doap/licenses/gpl>;
 
   lv2:optionalFeature lv2:hardRTCapable;

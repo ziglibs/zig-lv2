@@ -1,0 +1,32 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
+@prefix doap: <http://usefulinc.com/ns/doap#>.
+@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#>.
+@prefix units: <http://lv2plug.in/ns/extensions/units#>.
+
+<http://augustera.me/fifths>
+  a lv2:Plugin ;
+  lv2:binary <fifths.dll>;
+
+  doap:name "Fifths" ;
+  doap:license <http://opensource.org/licenses/mit> ;
+
+  lv2:requiredFeature urid:map ;
+  lv2:optionalFeature lv2:hardRTCapable ;
+  lv2:port [
+  	a lv2:InputPort ,
+  		atom:AtomPort ;
+  	atom:bufferType atom:Sequence ;
+  	atom:supports midi:MidiEvent ;
+  	lv2:index 0 ;
+  	lv2:symbol "in" ;
+  	lv2:name "In"
+  ] , [
+  	a lv2:OutputPort ,
+  		atom:AtomPort ;
+  	atom:bufferType atom:Sequence ;
+  	atom:supports midi:MidiEvent ;
+  	lv2:index 1 ;
+  	lv2:symbol "out" ;
+  	lv2:name "Out"
+  ] .
