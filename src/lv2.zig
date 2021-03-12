@@ -1,12 +1,12 @@
 const std = @import("std");
-const c = @import("c.zig");
+pub const c = @import("c.zig");
 
 pub usingnamespace @import("utils.zig");
 
 pub fn Handlers(comptime Handle_: type) type {
     return struct {
         run: ?fn (handle: *Handle_, samples: u32) void = null,
-        instantiate: ?fn (handle: *Handle_, descriptor: []const c.LV2_Descriptor, rate: f64, bundle_path: []const u8, features: []const []const c.LV2_Feature) anyerror!void = null,
+        instantiate: ?fn (handle: *Handle_, descriptor: *const c.LV2_Descriptor, rate: f64, bundle_path: []const u8, features: []const c.LV2_Feature) anyerror!void = null,
         activate: ?fn (handle: *Handle_) void = null,
         deactivate: ?fn (handle: *Handle_) void = null,
         extensionData: ?fn(uri: []const u8) *c_void = null
@@ -33,7 +33,7 @@ pub const Plugin = struct {
                     std.os.exit(1);
                 };
                 
-                if (handlers.instantiate) |act| act(handle, descriptor, rate, bundle_path, features) catch {
+                if (handlers.instantiate) |act| act(handle, @ptrCast(*const c.LV2_Descriptor, descriptor), rate, std.mem.span(bundle_path), @ptrCast(*const []c.LV2_Feature, features).*) catch {
                     std.heap.c_allocator.destroy(handle);
                     std.os.exit(1);
                 };

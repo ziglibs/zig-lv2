@@ -12,19 +12,33 @@ pub const Fifths = lv2.Plugin{
 
 comptime {
     Fifths.exportPlugin(.{
+        .instantiate = instantiate,
         .run = run
     });
 }
 
-fn decibelsToCoeff(g: f32) f32 {
-    return if (g > -90) std.math.pow(f32, 10, g * 0.05) else 0;
+// TODO: Remove all public use of C code
+fn instantiate (
+    handle: *Fifths.Handle,
+    descriptor: *const lv2.c.LV2_Descriptor,
+    rate: f64,
+    bundle_path: []const u8,
+    features: []const lv2.c.LV2_Feature
+) anyerror!void {
+    var feat = lv2.queryMissingFeature(features, &[_]lv2.Feature{
+        .{
+            .name = "http://lv2plug.in/ns/ext/log#log",
+            .required = false
+        },
+        .{
+            .name = "http://lv2plug.in/ns/ext/urid#map",
+            .required = true
+        }
+    });
+
+    if (feat) |_| return error.MissingFeature;
 }
 
 fn run(handle: *Fifths.Handle, samples: u32) void {
-    const coef = decibelsToCoeff(handle.gain.*);
     
-    var i: usize = 0;
-    while (i < samples) : (i += 1) {
-        handle.output[i] = handle.input[i] * coef;
-    }
 }
