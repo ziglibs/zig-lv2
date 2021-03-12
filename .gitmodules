@@ -1,0 +1,3 @@
+[submodule "lv2"]
+	path = lv2
+	url = https://github.com/lv2/lv2
