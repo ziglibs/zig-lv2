@@ -2,7 +2,7 @@ const std = @import("std");
 const lv2 = @import("lv2");
 
 pub const LV2Fun = lv2.Plugin{
-    .uri = "http://augustera.me/lv2fun",
+    .uri = "http://augustera.me/example",
     .Handle = struct {
         input: [*]f32,
         gain: *f32,
