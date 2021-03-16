@@ -1,8 +1,8 @@
-@prefix lv2:  <http://lv2plug.in/ns/lv2core#>.
-@prefix doap: <http://usefulinc.com/ns/doap#>.
-@prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#>.
-@prefix units: <http://lv2plug.in/ns/extensions/units#>.
+@prefix atom:  <http://lv2plug.in/ns/ext/atom#> .
+@prefix doap:  <http://usefulinc.com/ns/doap#> .
+@prefix lv2:   <http://lv2plug.in/ns/lv2core#> .
+@prefix urid:  <http://lv2plug.in/ns/ext/urid#> .
+@prefix midi:  <http://lv2plug.in/ns/ext/midi#> .
 
 <http://augustera.me/fifths>
   a lv2:Plugin ;

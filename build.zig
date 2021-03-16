@@ -7,6 +7,7 @@ pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
     inline for (examples) |example, i| {
         const lib = b.addSharedLibrary(example, "examples/" ++ example ++ "/" ++ example ++ ".zig", .{ .unversioned = {} });
+        // b.installFile("examples/" ++ example ++ "/" ++ example ++ ".ttl", example ++ ".lv2/manifest.ttl");
 
         lib.addPackagePath("lv2", "src/lv2.zig");
         lib.setBuildMode(mode);
@@ -14,7 +15,8 @@ pub fn build(b: *Builder) !void {
         lib.linkLibC();
         lib.addIncludeDir("lv2");
         
-        b.step(example, "Build example \"" ++ example ++ "\"").dependOn(&lib.step);
-        b.installFile("examples/" ++ example ++ "/" ++ example ++ ".ttl", example ++ ".lv2/manifest.ttl");
+        var step = b.step(example, "Build example \"" ++ example ++ "\"");
+        step.dependOn(&b.addInstallFileWithDir("examples/" ++ example ++ "/" ++ example ++ ".ttl", .Prefix, example ++ ".lv2/manifest.ttl").step);
+        step.dependOn(&lib.step);
     }
 }
