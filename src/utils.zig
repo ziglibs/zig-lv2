@@ -23,26 +23,6 @@ pub const Logger = struct {
     }
 };
 
-pub const AtomSequence = struct {
-
-};
-
-pub fn atomSequenceBegin(body: *c.LV2_Atom_Sequence_Body) *c.LV2_Atom_Event {
-    return @intToPtr(*c.LV2_Atom_Event, @ptrToInt(body) + 4); // @sizeOf(body)
-}
-
-pub fn atomPadSize(size: u32) u32 {
-    return (size + @as(u32, 7)) & (~@as(u32, 7));
-}
-
-pub fn atomSequenceNext(event: *c.LV2_Atom_Event) *c.LV2_Atom_Event {
-    return @intToPtr(*c.LV2_Atom_Event, @ptrToInt(event) + @sizeOf(c.LV2_Atom_Event) + atomPadSize(event.body.size));
-}
-
-pub fn atomSequenceEnded(body: *c.LV2_Atom_Sequence_Body, size: u32, i: *c.LV2_Atom_Event) bool {
-    return @ptrToInt(i) >= (@ptrToInt(body) + size);
-}
-
 pub const Feature = enum {
     map,
 

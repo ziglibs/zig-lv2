@@ -7,7 +7,6 @@ pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();
     inline for (examples) |example, i| {
         const lib = b.addSharedLibrary(example, "examples/" ++ example ++ "/" ++ example ++ ".zig", .{ .unversioned = {} });
-        // b.installFile("examples/" ++ example ++ "/" ++ example ++ ".ttl", example ++ ".lv2/manifest.ttl");
 
         lib.addPackagePath("lv2", "src/lv2.zig");
         lib.setBuildMode(mode);

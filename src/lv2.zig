@@ -1,6 +1,7 @@
 const std = @import("std");
 pub const c = @import("c.zig");
 
+pub usingnamespace @import("atom.zig");
 pub usingnamespace @import("utils.zig");
 
 pub fn Handlers(comptime Handle_: type) type {
@@ -49,9 +50,12 @@ pub const Plugin = struct {
                 var hnd = toHandle(instance);
 
                 inline for (std.meta.fields(@TypeOf(hnd.*))) |field, i| {
-                    if (@typeInfo(field.field_type) != .Pointer) continue;
                     if (i == port) {
-                        @field(hnd, field.name) = @ptrCast(field.field_type, @alignCast(@alignOf(field.field_type), data));
+                        if (@typeInfo(field.field_type) != .Pointer) {
+                            if (@hasDecl(field.field_type, "connectPort")) @field(@field(hnd, field.name), "connectPort")(data);
+                        } else {
+                            @field(hnd, field.name) = @ptrCast(field.field_type, @alignCast(@alignOf(field.field_type), data));
+                        }
                     }
                 }
             }

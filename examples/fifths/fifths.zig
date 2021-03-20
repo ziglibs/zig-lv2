@@ -28,8 +28,10 @@ pub const FifthsURIs = struct {
 pub const Fifths = lv2.Plugin{
     .uri = "http://augustera.me/fifths",
     .Handle = struct {
-        in: lv2.c.LV2_Atom_Sequence,
-        out: lv2.c.LV2_Atom_Sequence,
+        in: lv2.AtomSequence,
+        out: lv2.AtomSequence,
+
+        midi_log: std.fs.File,
 
         map: *lv2.Map,
         uris: FifthsURIs
@@ -39,7 +41,9 @@ pub const Fifths = lv2.Plugin{
 comptime {
     Fifths.exportPlugin(.{
         .instantiate = instantiate,
-        .run = run
+        .run = run,
+        .activate = activate,
+        .deactivate = deactivate
     });
 }
 
@@ -55,16 +59,39 @@ fn instantiate (
     handle.uris.map(handle.map);
 }
 
+fn activate(handle: *Fifths.Handle) void {
+    handle.midi_log = std.fs.cwd().createFile("C:/Users/augus/Documents/Programming/Plugins/lv2fun/log.a", .{}) catch {std.os.exit(1);};
+}
+
+fn deactivate(handle: *Fifths.Handle) void {
+    handle.midi_log.close();
+}
+
 fn run(handle: *Fifths.Handle, samples: u32) void {
-    // var iter: *lv2.c.LV2_Atom_Event = lv2.atomSequenceBegin(&handle.in.body);
-    // while (!lv2.atomSequenceEnded(&handle.in.body, handle.in.atom.size, iter)) : (iter = lv2.atomSequenceNext(iter)) {
-    //     std.debug.print("{}\n", .{iter});
+    // lv2.atomSequenceClear(handle.out.seq_internal);
+    // handle.out.seq_internal.atom.@"type" = handle.in.seq_internal.atom.@"type";
+    
+    // var iter = handle.in.iterator();
+    // while (iter.next()) |event| {
+    //     _ = lv2.atomSequenceAppendEvent(handle.out.seq_internal, handle.out.seq_internal.atom.size, event);
+    //     _ = lv2.c.lv2_atom_sequence_append_event(handle.out.seq_internal, handle.out.seq_internal.atom.size, event);
     // }
+    // lv2.c.lv2_atom_sequence_clear(handle.out.seq_internal);
+    // handle.out.seq_internal.atom.@"type" = handle.in.seq_internal.atom.@"type";
+    
+    var iter = handle.in.iterator();
+    while (iter.next()) |event| {
+        handle.midi_log.writer().print("{}\n", .{event}) catch {};
+    }
 }
 
 pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) noreturn {
     var f = std.fs.cwd().createFile("C:/Users/augus/Documents/Programming/Plugins/lv2fun/log.a", .{}) catch unreachable;
-    f.writeAll(msg) catch {};
+    var writer = f.writer();
+    writer.writeAll(msg) catch {};
+    if (error_return_trace) |trace| {
+    std.debug.writeStackTrace(trace.*, writer, std.heap.page_allocator, std.debug.getSelfDebugInfo() catch unreachable, std.debug.detectTTYConfig()) catch unreachable;
+    }
     f.close();
     std.process.exit(1);
 }
