@@ -15,61 +15,32 @@ pub const AtomSequence = struct {
     pub fn iterator(self: Self) AtomSequenceIterator {
         return AtomSequenceIterator.init(self.seq_internal);
     }
-};
 
-fn atomPadSize(size: u32) u32 {
-    return (size + @as(u32, 7)) & (~@as(u32, 7));
-}
-
-fn atomSequenceEnd(body: *c.LV2_Atom_Sequence_Body, size: u32) *c.LV2_Atom_Event {
-    return @intToPtr(*c.LV2_Atom_Event, @ptrToInt(body) + atomPadSize(size));
-}
-
-fn atomSequenceBegin(body: *c.LV2_Atom_Sequence_Body) *c.LV2_Atom_Event {
-    return @intToPtr(*c.LV2_Atom_Event, @ptrToInt(body) + 8);
-}
-
-fn atomSequenceNext(event: *c.LV2_Atom_Event) *c.LV2_Atom_Event {
-    return @intToPtr(*c.LV2_Atom_Event, @ptrToInt(event) + @sizeOf(c.LV2_Atom_Event) + atomPadSize(event.body.size));
-}
-
-fn atomSequenceEnded(body: *c.LV2_Atom_Sequence_Body, size: u32, i: *c.LV2_Atom_Event) bool {
-    return @ptrToInt(i) >= (@ptrToInt(body) + size);
-}
-
-pub fn atomSequenceClear(seq: *c.LV2_Atom_Sequence) void {
-    seq.atom.size = @sizeOf(c.LV2_Atom_Sequence_Body);
-}
-
-pub fn atomSequenceAppendEvent(seq: *c.LV2_Atom_Sequence, capacity: u32, event: *c.LV2_Atom_Event) ?*c.LV2_Atom_Event {
-    var total_size = @sizeOf(@TypeOf(event)) + event.body.size;
-    if (capacity - seq.atom.size < total_size) {
-        return null;
+    pub fn clear(self: Self) void {
+        c.lv2_atom_sequence_clear(self.seq_internal);
     }
 
-    var e = atomSequenceEnd(&seq.body, seq.atom.size);
-    @memcpy(@ptrCast([*]align(8) u8, e), @ptrCast([*]align(8) u8, event), total_size);
-
-    seq.atom.size += atomPadSize(total_size);
-
-    return e;
-}
+    pub fn appendEvent(self: Self, out_size: u32, event: *c.LV2_Atom_Event) ?*c.LV2_Atom_Event {
+        return c.lv2_atom_sequence_append_event(self.seq_internal, out_size, event);
+    }
+};
 
 pub const AtomSequenceIterator = struct {
     const Self = @This();
 
     seq: *c.LV2_Atom_Sequence,
-    last: *c.LV2_Atom_Event,
+    last: ?*c.LV2_Atom_Event,
 
     pub fn init(seq: *c.LV2_Atom_Sequence) AtomSequenceIterator {
         return Self{
             .seq = seq,
-            .last = atomSequenceBegin(&seq.body)
+            .last = null
         };
     }
 
     pub fn next(self: *Self) ?*c.LV2_Atom_Event {
-        self.last = atomSequenceNext(self.last);
-        return if (!atomSequenceEnded(&self.seq.body, self.seq.atom.size, self.last)) self.last else null;
+        self.last = if (self.last) |last| c.lv2_atom_sequence_next(last) else c.lv2_atom_sequence_begin(&self.seq.body);
+        if (c.lv2_atom_sequence_is_end(&self.seq.body, self.seq.atom.size, self.last)) return null;
+        return self.last;
     }
 };
