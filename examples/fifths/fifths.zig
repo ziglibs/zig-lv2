@@ -73,9 +73,9 @@ fn run(handle: *Fifths.Handle, samples: u32) void {
     handle.out.seq_internal.atom.@"type" = handle.in.seq_internal.atom.@"type";
 
     var iter = handle.in.iterator();
-    while (iter.next()) |*event| {
+    while (iter.next()) |event| {
         if (event.event_internal.body.@"type" == handle.uris.midi_event) {
-            _ = handle.out.appendEvent(out_size, event.*) catch @panic("Error appending!");
+            _ = handle.out.appendEvent(out_size, event) catch @panic("Error appending!");
 
             var data = event.getDataAs(*MidiNoteData);
             var fifth = std.mem.zeroes(MidiNoteEvent);

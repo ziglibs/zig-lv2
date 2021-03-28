@@ -12,7 +12,7 @@ pub const AtomEvent = struct {
         };
     }
 
-    pub fn getDataAs(self: *Self, comptime T: type) T {
+    pub fn getDataAs(self: Self, comptime T: type) T {
         return @intToPtr(T, @ptrToInt(self.event_internal) + @sizeOf(c.LV2_Atom_Event));
     }
 };
