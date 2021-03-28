@@ -55,6 +55,17 @@ fn instantiate (
     handle.uris.map(handle.map);
 }
 
+const MidiNoteData = struct {
+    status: u8,
+    pitch: u8,
+    velocity: u8
+};
+
+const MidiNoteEvent = struct {
+    event: lv2.c.LV2_Atom_Event,
+    data: MidiNoteData
+};
+
 fn run(handle: *Fifths.Handle, samples: u32) void {
     const out_size = handle.out.seq_internal.atom.size;
     
@@ -62,11 +73,22 @@ fn run(handle: *Fifths.Handle, samples: u32) void {
     handle.out.seq_internal.atom.@"type" = handle.in.seq_internal.atom.@"type";
 
     var iter = handle.in.iterator();
-    while (iter.next()) |event| {
-        _ = handle.out.appendEvent(out_size, event);
+    while (iter.next()) |*event| {
+        if (event.event_internal.body.@"type" == handle.uris.midi_event) {
+            _ = handle.out.appendEvent(out_size, event.*) catch @panic("Error appending!");
 
-        if (event.body.@"type" == handle.uris.midi_event) {
-            // play the fifth
+            var data = event.getDataAs(*MidiNoteData);
+            var fifth = std.mem.zeroes(MidiNoteEvent);
+            var ev = event.event_internal;
+
+            fifth.event.time.frames = ev.time.frames;
+            fifth.event.body.@"type" = ev.body.@"type";
+            fifth.event.body.size = ev.body.size;
+            fifth.data.status = data.status;
+            fifth.data.pitch = data.pitch + 7;
+            fifth.data.velocity = data.velocity;
+
+            _ = handle.out.appendEvent(out_size, lv2.AtomEvent.init(&fifth.event)) catch @panic("Error appending!");
         }
     }
 }
