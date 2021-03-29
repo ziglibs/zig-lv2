@@ -1,19 +1,30 @@
 const c = @import("c.zig");
 const std = @import("std");
 
-pub const AtomEvent = struct {
+pub const Atom = extern struct {
+    const Self = @This();
+    
+    size: u32,
+    kind: u32
+};
+
+pub const AtomEventTime = extern union {
+    frames: i64,
+    beats: f64,
+};
+
+pub const AtomEvent = extern struct {
     const Self = @This();
 
-    event_internal: *c.LV2_Atom_Event,
+    time: AtomEventTime,
+    body: Atom,
 
-    pub fn init(event: *c.LV2_Atom_Event) Self {
-        return Self{
-            .event_internal = event
-        };
+    pub fn init(event: *c.LV2_Atom_Event) *Self {
+        return @ptrCast(*Self, event);
     }
 
-    pub fn getDataAs(self: Self, comptime T: type) T {
-        return @intToPtr(T, @ptrToInt(self.event_internal) + @sizeOf(c.LV2_Atom_Event));
+    pub fn getDataAs(self: *Self, comptime T: type) T {
+        return @intToPtr(T, @ptrToInt(self) + @sizeOf(Self));
     }
 };
 
@@ -28,6 +39,10 @@ pub const AtomSequence = struct {
         }
     }
 
+    pub fn atom(self: Self) *Atom {
+        return @ptrCast(*Atom, &self.seq_internal.atom);
+    }
+
     pub fn iterator(self: Self) AtomSequenceIterator {
         return AtomSequenceIterator.init(self.seq_internal);
     }
@@ -36,8 +51,8 @@ pub const AtomSequence = struct {
         c.lv2_atom_sequence_clear(self.seq_internal);
     }
 
-    pub fn appendEvent(self: Self, out_size: u32, event: AtomEvent) !AtomEvent {
-        var maybe_appended_event = c.lv2_atom_sequence_append_event(self.seq_internal, out_size, event.event_internal);
+    pub fn appendEvent(self: Self, out_size: u32, event: *AtomEvent) !*AtomEvent {
+        var maybe_appended_event = c.lv2_atom_sequence_append_event(self.seq_internal, out_size, @ptrCast(*c.LV2_Atom_Event, event));
         return if (maybe_appended_event) |appended_event| AtomEvent.init(appended_event) else error.AppendError;
     }
 };
@@ -55,7 +70,7 @@ pub const AtomSequenceIterator = struct {
         };
     }
 
-    pub fn next(self: *Self) ?AtomEvent {
+    pub fn next(self: *Self) ?*AtomEvent {
         self.last = if (self.last) |last| c.lv2_atom_sequence_next(last) else c.lv2_atom_sequence_begin(&self.seq.body);
         if (c.lv2_atom_sequence_is_end(&self.seq.body, self.seq.atom.size, self.last)) return null;
         return if (self.last) |l| AtomEvent.init(l) else null;
