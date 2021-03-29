@@ -28,8 +28,8 @@ pub const FifthsURIs = struct {
 pub const Fifths = lv2.Plugin{
     .uri = "http://augustera.me/fifths",
     .Handle = struct {
-        in: lv2.AtomSequence,
-        out: lv2.AtomSequence,
+        in: *lv2.AtomSequence,
+        out: *lv2.AtomSequence,
 
         map: *lv2.Map,
         uris: FifthsURIs
@@ -67,9 +67,9 @@ const MidiNoteEvent = extern struct {
 };
 
 fn run(handle: *Fifths.Handle, samples: u32) void {
-    const out_size = handle.out.atom().size;
+    const out_size = handle.out.atom.size;
     handle.out.clear();
-    handle.out.atom().kind = handle.in.atom().kind;
+    handle.out.atom.kind = handle.in.atom.kind;
 
     var iter = handle.in.iterator();
     while (iter.next()) |event| {
@@ -78,7 +78,7 @@ fn run(handle: *Fifths.Handle, samples: u32) void {
 
             var data = event.getDataAs(*MidiNoteData);
             var fifth = std.mem.zeroes(MidiNoteEvent);
-            
+
             fifth.event.time.frames = event.time.frames;
             fifth.event.body.kind = event.body.kind;
             fifth.event.body.size = event.body.size;

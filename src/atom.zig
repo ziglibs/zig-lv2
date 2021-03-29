@@ -28,31 +28,29 @@ pub const AtomEvent = extern struct {
     }
 };
 
-pub const AtomSequence = struct {
+pub const AtomSequenceBody = extern struct {
+    /// URID of unit of event time stamps
+    unit: u32,
+    /// Currently unused
+    pad: u32,
+};
+
+pub const AtomSequence = extern struct {
     const Self = @This();
 
-    seq_internal: *c.LV2_Atom_Sequence,
+    atom: Atom,
+    body: AtomSequenceBody,
 
-    pub fn connectPort(self: *Self, maybeData: ?*c_void) void {
-        if (maybeData) |data| {
-            self.seq_internal = @ptrCast(*c.LV2_Atom_Sequence, @alignCast(@alignOf(c.LV2_Atom_Sequence), data));
-        }
+    pub fn iterator(self: *Self) AtomSequenceIterator {
+        return AtomSequenceIterator.init(@ptrCast(*c.LV2_Atom_Sequence, self));
     }
 
-    pub fn atom(self: Self) *Atom {
-        return @ptrCast(*Atom, &self.seq_internal.atom);
+    pub fn clear(self: *Self) void {
+        c.lv2_atom_sequence_clear(@ptrCast(*c.LV2_Atom_Sequence, self));
     }
 
-    pub fn iterator(self: Self) AtomSequenceIterator {
-        return AtomSequenceIterator.init(self.seq_internal);
-    }
-
-    pub fn clear(self: Self) void {
-        c.lv2_atom_sequence_clear(self.seq_internal);
-    }
-
-    pub fn appendEvent(self: Self, out_size: u32, event: *AtomEvent) !*AtomEvent {
-        var maybe_appended_event = c.lv2_atom_sequence_append_event(self.seq_internal, out_size, @ptrCast(*c.LV2_Atom_Event, event));
+    pub fn appendEvent(self: *Self, out_size: u32, event: *AtomEvent) !*AtomEvent {
+        var maybe_appended_event = c.lv2_atom_sequence_append_event(@ptrCast(*c.LV2_Atom_Sequence, self), out_size, @ptrCast(*c.LV2_Atom_Event, event));
         return if (maybe_appended_event) |appended_event| AtomEvent.init(appended_event) else error.AppendError;
     }
 };
