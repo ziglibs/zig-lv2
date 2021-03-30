@@ -9,6 +9,22 @@ pub const Logger = struct {
     }
 };
 
+pub const Features = struct {
+    const Self = @This();
+
+    features: []const c.LV2_Feature,
+
+    pub fn init(features: []const c.LV2_Feature) Self {
+        return Self{
+            .features = features
+        };
+    }
+
+    pub fn query(self: Self, comptime T: type) ?T {
+        return queryFeature(self.features, T);
+    }
+};
+
 pub fn getFeatureData(features: []const c.LV2_Feature, uri: []const u8) ?*c_void {
     for (features) |filled_feat| {
         if (std.mem.eql(u8, uri, std.mem.span(filled_feat.URI))) {

@@ -45,12 +45,12 @@ comptime {
 
 fn instantiate (
     handle: *Fifths.Handle,
-    descriptor: *const lv2.c.LV2_Descriptor,
+    descriptor: *const lv2.Descriptor,
     rate: f64,
     bundle_path: []const u8,
-    features: []const lv2.c.LV2_Feature
+    features: lv2.Features
 ) anyerror!void {
-    handle.map = lv2.queryFeature(features, lv2.Map).?;
+    handle.map = features.query(lv2.Map).?;
 
     handle.uris.map(handle.map);
 }

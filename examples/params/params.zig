@@ -39,7 +39,7 @@ pub const URIs = struct {
 //     spring:    LV2_Atom_Float
 // };
 
-pub const Fifths = lv2.Plugin{
+pub const Params = lv2.Plugin{
     .uri = "http://augustera.me/params",
     .Handle = struct {
         // Ports
@@ -59,25 +59,25 @@ pub const Fifths = lv2.Plugin{
 };
 
 comptime {
-    Fifths.exportPlugin(.{
+    Params.exportPlugin(.{
         .instantiate = instantiate,
         .run = run,
     });
 }
 
 fn instantiate (
-    handle: *Fifths.Handle,
-    descriptor: *const lv2.c.LV2_Descriptor,
+    handle: *Params.Handle,
+    descriptor: *const lv2.Descriptor,
     rate: f64,
     bundle_path: []const u8,
-    features: []const lv2.c.LV2_Feature
+    features: lv2.Features
 ) anyerror!void {
-    handle.map = lv2.queryFeature(features, lv2.Map).?;
-    handle.unmap = lv2.queryFeature(features, lv2.Unmap).?;
+    handle.map = features.query(lv2.Map).?;
+    handle.unmap = features.query(lv2.Unmap).?;
 
     handle.uris.map(handle.map);
 }
 
-fn run(handle: *Fifths.Handle, samples: u32) void {
+fn run(handle: *Params.Handle, samples: u32) void {
     
 }

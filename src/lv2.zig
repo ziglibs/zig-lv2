@@ -5,10 +5,12 @@ pub usingnamespace @import("urid.zig");
 pub usingnamespace @import("atom.zig");
 pub usingnamespace @import("utils.zig");
 
+pub const Descriptor = c.LV2_Descriptor;
+
 pub fn Handlers(comptime Handle_: type) type {
     return struct {
         run: ?fn (handle: *Handle_, samples: u32) void = null,
-        instantiate: ?fn (handle: *Handle_, descriptor: *const c.LV2_Descriptor, rate: f64, bundle_path: []const u8, features: []const c.LV2_Feature) anyerror!void = null,
+        instantiate: ?fn (handle: *Handle_, descriptor: *const Descriptor, rate: f64, bundle_path: []const u8, features: Features) anyerror!void = null,
         activate: ?fn (handle: *Handle_) void = null,
         deactivate: ?fn (handle: *Handle_) void = null,
         extensionData: ?fn(uri: []const u8) *c_void = null
@@ -29,13 +31,13 @@ pub const Plugin = struct {
                 return @ptrCast(*Handle__, @alignCast(@alignOf(*Handle__), instance));
             }
 
-            pub fn instantiate(descriptor: [*c]const c.LV2_Descriptor, rate: f64, bundle_path: [*c]const u8, features: [*c]const [*c]const c.LV2_Feature) callconv(.C) c.LV2_Handle {
+            pub fn instantiate(descriptor: [*c]const Descriptor, rate: f64, bundle_path: [*c]const u8, features: [*c]const [*c]const c.LV2_Feature) callconv(.C) c.LV2_Handle {
                 var handle = std.heap.c_allocator.create(Handle__) catch {
                     std.debug.print("Yeah you're kinda screwed!", .{});
                     std.os.exit(1);
                 };
                 
-                if (handlers.instantiate) |act| act(handle, @ptrCast(*const c.LV2_Descriptor, descriptor), rate, std.mem.span(bundle_path), @ptrCast(*const []c.LV2_Feature, features).*) catch {
+                if (handlers.instantiate) |act| act(handle, @ptrCast(*const Descriptor, descriptor), rate, std.mem.span(bundle_path), Features.init(@ptrCast(*const []c.LV2_Feature, features).*)) catch {
                     std.heap.c_allocator.destroy(handle);
                     std.os.exit(1);
                 };
@@ -78,9 +80,9 @@ pub const Plugin = struct {
                 if (handlers.run) |rn| rn(toHandle(instance), n_samples);
             }
 
-            pub const __globalDescriptor = c.LV2_Descriptor{ .URI = URI_.ptr, .instantiate = instantiate, .connect_port = connect_port, .activate = activate, .run = run, .deactivate = deactivate, .cleanup = cleanup, .extension_data = extension_data };
+            pub const __globalDescriptor = Descriptor{ .URI = URI_.ptr, .instantiate = instantiate, .connect_port = connect_port, .activate = activate, .run = run, .deactivate = deactivate, .cleanup = cleanup, .extension_data = extension_data };
 
-            pub fn lv2_descriptor(index: u32) callconv(.C) [*c]const c.LV2_Descriptor {
+            pub fn lv2_descriptor(index: u32) callconv(.C) [*c]const Descriptor {
                 return if (index == 0) &__globalDescriptor else null;
             }
         };
