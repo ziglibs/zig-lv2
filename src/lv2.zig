@@ -1,6 +1,7 @@
 const std = @import("std");
 pub const c = @import("c.zig");
 
+pub usingnamespace @import("urid.zig");
 pub usingnamespace @import("atom.zig");
 pub usingnamespace @import("utils.zig");
 

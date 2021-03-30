@@ -1,7 +1,7 @@
 const std = @import("std");
 const Builder = @import("std").build.Builder;
 
-const examples = &[_][]const u8{"amp", "fifths"};
+const examples = &[_][]const u8{"amp", "fifths", "params"};
 
 pub fn build(b: *Builder) !void {
     const mode = b.standardReleaseOptions();

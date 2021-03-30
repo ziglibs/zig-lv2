@@ -1,7 +1,7 @@
 const std = @import("std");
 const lv2 = @import("lv2");
 
-pub const FifthsURIs = struct {
+pub const URIs = struct {
     atom_path: u32,
     atom_resource: u32,
     atom_sequence: u32,
@@ -25,14 +25,36 @@ pub const FifthsURIs = struct {
     }
 };
 
+// pub const State = struct {
+//     aint:      LV2_Atom_Int,
+//     along:     LV2_Atom_Long,
+//     afloat:    LV2_Atom_Float,
+//     adouble:   LV2_Atom_Double,
+//     abool:     LV2_Atom_Bool,
+//     astring:   LV2_Atom,
+//     string:    [1024]u8,
+//     apath:     LV2_Atom,
+//     path:      [1024]u8,
+//     lfo:       LV2_Atom_Float,
+//     spring:    LV2_Atom_Float
+// };
+
 pub const Fifths = lv2.Plugin{
-    .uri = "http://augustera.me/fifths",
+    .uri = "http://augustera.me/params",
     .Handle = struct {
+        // Ports
         in: *lv2.AtomSequence,
         out: *lv2.AtomSequence,
 
+        // Features
         map: lv2.Map,
-        uris: FifthsURIs
+        unmap: lv2.Unmap,
+
+        // URIs
+        uris: URIs,
+
+        // State
+        // state: State
     },
 };
 
@@ -51,43 +73,11 @@ fn instantiate (
     features: []const lv2.c.LV2_Feature
 ) anyerror!void {
     handle.map = lv2.queryFeature(features, lv2.Map).?;
+    handle.unmap = lv2.queryFeature(features, lv2.Unmap).?;
 
     handle.uris.map(handle.map);
 }
 
-const MidiNoteData = extern struct {
-    status: u8,
-    pitch: u8,
-    velocity: u8
-};
-
-const MidiNoteEvent = extern struct {
-    event: lv2.AtomEvent,
-    data: MidiNoteData
-};
-
 fn run(handle: *Fifths.Handle, samples: u32) void {
-    const out_size = handle.out.atom.size;
-    handle.out.clear();
-    handle.out.atom.kind = handle.in.atom.kind;
-
-    var iter = handle.in.iterator();
-    while (iter.next()) |event| {
-        if (event.body.kind == handle.uris.midi_event) {
-            _ = handle.out.appendEvent(out_size, event) catch @panic("Error appending!");
-
-            var data = event.getDataAs(*MidiNoteData);
-            var fifth = std.mem.zeroes(MidiNoteEvent);
-
-            fifth.event.time.frames = event.time.frames;
-            fifth.event.body.kind = event.body.kind;
-            fifth.event.body.size = event.body.size;
-
-            fifth.data.status = data.status;
-            fifth.data.pitch = data.pitch + 7;
-            fifth.data.velocity = data.velocity;
-
-            _ = handle.out.appendEvent(out_size, &fifth.event) catch @panic("Error appending!");
-        }
-    }
+    
 }
