@@ -69,8 +69,11 @@ plug:spring
 <http://augustera.me/params>
 	a lv2:Plugin ,
 		lv2:UtilityPlugin ;
-	doap:name "Example Parameters" ;
+	lv2:binary <params.dll>;
+
+	doap:name "Parmas" ;
 	doap:license <http://opensource.org/licenses/isc> ;
+	
 	lv2:project <http://lv2plug.in/ns/lv2> ;
 	lv2:requiredFeature urid:map ;
 	lv2:optionalFeature lv2:hardRTCapable ,

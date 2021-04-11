@@ -1,4 +1,4 @@
-const c = @import("c.zig");
+const c = @import("../c.zig");
 const std = @import("std");
 
 pub const Atom = extern struct {
@@ -6,6 +6,55 @@ pub const Atom = extern struct {
     
     size: u32,
     kind: u32
+};
+
+pub const AtomObjectBody = c.LV2_Atom_Object_Body;
+pub const AtomPropertyBody = extern struct {
+    const Self = @This();
+
+    key: u32,
+    context: u32,
+    value: Atom,
+
+    pub fn init(event: *c.LV2_Atom_Property_Body) *Self {
+        return @ptrCast(*Self, event);
+    }
+};
+
+pub const AtomObject = extern struct {
+    const Self = @This();
+
+    atom: Atom,
+    body: AtomObjectBody,
+
+    pub fn iterator(self: *Self) AtomObjectIterator {
+        return AtomObjectIterator.init(@ptrCast(*c.LV2_Atom_Object, self));
+    }
+};
+
+pub const AtomObjectIterator = struct {
+    const Self = @This();
+
+    object: *c.LV2_Atom_Object,
+    last: ?*AtomPropertyBody,
+
+    //         #define LV2_ATOM_OBJECT_FOREACH(obj, iter)                                    \
+//   for (LV2_Atom_Property_Body * (iter) = lv2_atom_object_begin(&(obj)->body); \
+//        !lv2_atom_object_is_end(&(obj)->body, (obj)->atom.size, (iter));       \
+//        (iter) = lv2_atom_object_next(iter))
+
+    pub fn init(object: *c.LV2_Atom_Object) Self {
+        return Self{
+            .object = c.LV2_Atom_Object,
+            .last = null
+        };
+    }
+
+    pub fn next(self: *Self) ?*AtomPropertyBody {
+        self.last = if (self.last) |last| c.lv2_atom_object_next(last) else c.lv2_atom_object_begin(&self.object.body);
+        if (c.lv2_atom_object_is_end(&self.object.body, self.object.atom.size, self.last)) return null;
+        return if (self.last) |l| AtomPropertyBody.init(l) else null;
+    }
 };
 
 pub const AtomEventTime = extern union {
@@ -25,6 +74,10 @@ pub const AtomEvent = extern struct {
 
     pub fn getDataAs(self: *Self, comptime T: type) T {
         return @intToPtr(T, @ptrToInt(self) + @sizeOf(Self));
+    }
+
+    pub fn toAtomObject(self: *Self) *AtomObject {
+        return @ptrCast(*AtomObject, &self.body);
     }
 };
 

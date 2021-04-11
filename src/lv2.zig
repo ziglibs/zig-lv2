@@ -2,7 +2,11 @@ const std = @import("std");
 pub const c = @import("c.zig");
 
 pub usingnamespace @import("urid.zig");
-pub usingnamespace @import("atom.zig");
+
+pub usingnamespace @import("atom/atom.zig");
+pub usingnamespace @import("atom/types.zig");
+
+pub usingnamespace @import("state.zig");
 pub usingnamespace @import("utils.zig");
 
 pub const Descriptor = c.LV2_Descriptor;
@@ -13,7 +17,7 @@ pub fn Handlers(comptime Handle_: type) type {
         instantiate: ?fn (handle: *Handle_, descriptor: *const Descriptor, rate: f64, bundle_path: []const u8, features: Features) anyerror!void = null,
         activate: ?fn (handle: *Handle_) void = null,
         deactivate: ?fn (handle: *Handle_) void = null,
-        extensionData: ?fn(uri: []const u8) *c_void = null
+        extensionData: ?fn(uri: []const u8) ?*c_void = null
     };
 }
 
@@ -72,7 +76,7 @@ pub const Plugin = struct {
             }
 
             pub fn extension_data(uri: [*c]const u8) callconv(.C) ?*c_void {
-                if (handlers.extensionData) |rn| return rn(uri);
+                if (handlers.extensionData) |rn| return rn(std.mem.span(uri));
                 return null;
             }
 

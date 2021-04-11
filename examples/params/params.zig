@@ -25,19 +25,17 @@ pub const URIs = struct {
     }
 };
 
-// pub const State = struct {
-//     aint:      LV2_Atom_Int,
-//     along:     LV2_Atom_Long,
-//     afloat:    LV2_Atom_Float,
-//     adouble:   LV2_Atom_Double,
-//     abool:     LV2_Atom_Bool,
-//     astring:   LV2_Atom,
-//     string:    [1024]u8,
-//     apath:     LV2_Atom,
-//     path:      [1024]u8,
-//     lfo:       LV2_Atom_Float,
-//     spring:    LV2_Atom_Float
-// };
+pub const State = struct {
+    aint:      lv2.AtomInt,
+    along:     lv2.AtomLong,
+    afloat:    lv2.AtomFloat,
+    adouble:   lv2.AtomDouble,
+    abool:     lv2.AtomBool,
+    astring:   lv2.AtomString,
+    apath:     lv2.AtomPath,
+    lfo:       lv2.AtomFloat,
+    spring:    lv2.AtomFloat
+};
 
 pub const Params = lv2.Plugin{
     .uri = "http://augustera.me/params",
@@ -54,7 +52,9 @@ pub const Params = lv2.Plugin{
         uris: URIs,
 
         // State
-        // state: State
+        state: State,
+
+        debug_file: std.fs.File
     },
 };
 
@@ -62,6 +62,9 @@ comptime {
     Params.exportPlugin(.{
         .instantiate = instantiate,
         .run = run,
+        .activate = activate,
+        .deactivate = deactivate,
+        .extensionData = extensionData
     });
 }
 
@@ -78,6 +81,56 @@ fn instantiate (
     handle.uris.map(handle.map);
 }
 
+fn activate(handle: *Params.Handle) void {
+    handle.debug_file = std.fs.cwd().createFile("C:/Users/augus/Documents/Programming/Plugins/lv2fun/log.a", .{}) catch {std.os.exit(1);};
+}
+
+fn deactivate(handle: *Params.Handle) void {
+    handle.debug_file.close();
+}
+
 fn run(handle: *Params.Handle, samples: u32) void {
-    
+    var iter = handle.in.iterator();
+    while (iter.next()) |event| {
+        var object = event.toAtomObject();
+        if (object.body.otype == handle.uris.patch_set) {
+            handle.debug_file.writer().print("{}\n", .{object}) catch {};
+        }
+    }
+}
+
+// State save method.
+// This is used in the usual way when called by the host to save plugin state,
+// but also internally for writing messages in the audio thread by passing a
+// "store" function which actually writes the description to the forge.
+fn save (handle: lv2.c.LV2_Handle, store: lv2.c.LV2_State_Store_Function, state_handle: lv2.c.LV2_State_Handle, flags: u32, features: [*c]const [*c]const lv2.c.LV2_Feature) callconv(.C) lv2.c.LV2_State_Status {
+    if (store == null) return @intToEnum(lv2.c.LV2_State_Status, 0);
+
+    var params = @ptrCast(*Params.Handle, @alignCast(@alignOf(*Params.Handle), handle));
+    var state = @ptrCast(*State, @alignCast(@alignOf(*State), state_handle));
+    var map_path = lv2.getFeatureData(@ptrCast(*const []lv2.c.LV2_Feature, features).*, lv2.c.LV2_STATE__mapPath).?;
+
+    var status = @intToEnum(lv2.c.LV2_State_Status, 0);
+
+    inline for (std.meta.fields(State)) |field| {
+        var value = @field(state, field.name);
+        status = store.?(handle, key, value + 1, valuesize, field.field_type, lv2.c.LV2_STATE_IS_POD | lv2.c.LV2_STATE_IS_PORTABLE);
+    }
+
+    return status;
+}
+
+fn restore (handle: lv2.c.LV2_Handle, ret: lv2.c.LV2_State_Retrieve_Function, state: lv2.c.LV2_State_Handle, flags: u32, features: [*c]const [*c]const lv2.c.LV2_Feature) callconv(.C) lv2.c.LV2_State_Status {
+    return @intToEnum(lv2.c.LV2_State_Status, 0);
+}
+
+fn extensionData(uri: []const u8) ?*c_void {
+    if (std.mem.eql(u8, uri, lv2.c.LV2_STATE__interface)) {
+        var state = lv2.c.LV2_State_Interface{
+            .save = save,
+            .restore = restore
+        };
+        return @ptrCast(*c_void, &state);
+    }
+    return null;
 }

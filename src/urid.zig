@@ -11,12 +11,12 @@ pub const Map = struct {
         };
     }
 
-    pub fn map(self: Self, uri: []const u8) u32 {
-        return self.map_internal.?.map.?(self.map_internal.?.handle, @ptrCast([*c]const u8, uri));
-    }
-
     pub fn toURI() []const u8 {
         return "http://lv2plug.in/ns/ext/urid#map";
+    }
+
+    pub fn map(self: Self, uri: []const u8) u32 {
+        return self.map_internal.?.map.?(self.map_internal.?.handle, @ptrCast([*c]const u8, uri));
     }
 };
 
@@ -31,12 +31,12 @@ pub const Unmap = struct {
         };
     }
 
-    pub fn unmap(self: Self, mapped: u32) []const u8 {
-        return self.unmap_internal.?.unmap.?(self.unmap_internal.?.handle, @ptrCast([*c]const u8, mapped));
-    }
-
     pub fn toURI() []const u8 {
         return "http://lv2plug.in/ns/ext/urid#unmap";
+    }
+
+    pub fn unmap(self: Self, mapped: u32) []const u8 {
+        return self.unmap_internal.?.unmap.?(self.unmap_internal.?.handle, @ptrCast([*c]const u8, mapped));
     }
 };
 
