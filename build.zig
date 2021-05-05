@@ -10,7 +10,7 @@ pub fn build(b: *Builder) !void {
 
         lib.addPackagePath("lv2", "src/lv2.zig");
         lib.setBuildMode(mode);
-        lib.setOutputDir("zig-cache/" ++ example ++ ".lv2");
+        lib.setOutputDir("zig-out/" ++ example ++ ".lv2");
         lib.linkLibC();
         lib.addIncludeDir("lv2");
         

@@ -16,37 +16,37 @@
 
 # If no suitable parameter exists, one can be defined for the plugin like so:
 
-plug:int
+plug:aint
 	a lv2:Parameter ;
 	rdfs:label "int" ;
 	rdfs:range atom:Int .
 
-plug:long
+plug:along
 	a lv2:Parameter ;
 	rdfs:label "long" ;
 	rdfs:range atom:Long .
 
-plug:float
+plug:afloat
 	a lv2:Parameter ;
 	rdfs:label "float" ;
 	rdfs:range atom:Float .
 
-plug:double
+plug:adouble
 	a lv2:Parameter ;
 	rdfs:label "double" ;
 	rdfs:range atom:Double .
 
-plug:bool
+plug:abool
 	a lv2:Parameter ;
 	rdfs:label "bool" ;
 	rdfs:range atom:Bool .
 
-plug:string
+plug:astring
 	a lv2:Parameter ;
 	rdfs:label "string" ;
 	rdfs:range atom:String .
 
-plug:path
+plug:apath
 	a lv2:Parameter ;
 	rdfs:label "path" ;
 	rdfs:range atom:Path .
