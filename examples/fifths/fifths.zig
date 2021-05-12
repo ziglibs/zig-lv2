@@ -12,7 +12,7 @@ pub const FifthsURIs = struct {
     patch_property: u32,
     patch_value: u32,
 
-    pub fn map(self: *@This(), map_: lv2.Map) void {
+    pub fn map(self: *@This(), map_: *lv2.URIDMap) void {
         self.atom_path = map_.map(lv2.c.LV2_ATOM__Path);
         self.atom_resource = map_.map(lv2.c.LV2_ATOM__Resource);
         self.atom_sequence = map_.map(lv2.c.LV2_ATOM__Sequence);
@@ -31,7 +31,7 @@ pub const Fifths = lv2.Plugin{
         in: *lv2.AtomSequence,
         out: *lv2.AtomSequence,
 
-        map: lv2.Map,
+        map: *lv2.URIDMap,
         uris: FifthsURIs
     },
 };
@@ -50,7 +50,7 @@ fn instantiate (
     bundle_path: []const u8,
     features: lv2.Features
 ) anyerror!void {
-    handle.map = features.query(lv2.Map).?;
+    handle.map = features.query(lv2.URIDMap).?;
 
     handle.uris.map(handle.map);
 }

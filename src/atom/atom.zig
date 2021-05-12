@@ -1,24 +1,34 @@
 const c = @import("../c.zig");
 const std = @import("std");
+const urid = @import("../urid.zig");
 
 pub const Atom = extern struct {
     const Self = @This();
     
-    size: u32,
-    kind: u32
+    size: urid.URID,
+    kind: urid.URID
 };
 
-pub const AtomObjectBody = c.LV2_Atom_Object_Body;
+pub const AtomObjectBody = extern struct {
+    id: urid.URID,
+    kind: urid.URID
+};
+
 pub const AtomPropertyBody = extern struct {
     const Self = @This();
 
-    key: u32,
-    context: u32,
+    key: urid.URID,
+    context: urid.URID,
     value: Atom,
 
     pub fn init(event: *c.LV2_Atom_Property_Body) *Self {
         return @ptrCast(*Self, event);
     }
+};
+
+pub const AtomObjectQuery = struct {
+    key: urid.URID,
+    value: *?*Atom
 };
 
 pub const AtomObject = extern struct {
@@ -30,22 +40,29 @@ pub const AtomObject = extern struct {
     pub fn iterator(self: *Self) AtomObjectIterator {
         return AtomObjectIterator.init(@ptrCast(*c.LV2_Atom_Object, self));
     }
+
+    pub fn query(self: *Self, queries: []AtomObjectQuery) void {
+        var it = self.iterator();
+        while (it.next()) |prop| {
+            for (queries) |q| {
+                if (prop.key == q.key and q.value.* == null) {
+                    q.value.* = &prop.value;
+                    break;
+                }
+            }
+        }
+    }
 };
 
 pub const AtomObjectIterator = struct {
     const Self = @This();
 
     object: *c.LV2_Atom_Object,
-    last: ?*AtomPropertyBody,
-
-    //         #define LV2_ATOM_OBJECT_FOREACH(obj, iter)                                    \
-//   for (LV2_Atom_Property_Body * (iter) = lv2_atom_object_begin(&(obj)->body); \
-//        !lv2_atom_object_is_end(&(obj)->body, (obj)->atom.size, (iter));       \
-//        (iter) = lv2_atom_object_next(iter))
+    last: ?*c.LV2_Atom_Property_Body,
 
     pub fn init(object: *c.LV2_Atom_Object) Self {
         return Self{
-            .object = c.LV2_Atom_Object,
+            .object = object,
             .last = null
         };
     }
@@ -83,7 +100,7 @@ pub const AtomEvent = extern struct {
 
 pub const AtomSequenceBody = extern struct {
     /// URID of unit of event time stamps
-    unit: u32,
+    unit: urid.URID,
     /// Currently unused
     pad: u32,
 };
@@ -106,6 +123,10 @@ pub const AtomSequence = extern struct {
         var maybe_appended_event = c.lv2_atom_sequence_append_event(@ptrCast(*c.LV2_Atom_Sequence, self), out_size, @ptrCast(*c.LV2_Atom_Event, event));
         return if (maybe_appended_event) |appended_event| AtomEvent.init(appended_event) else error.AppendError;
     }
+
+    pub fn toBuffer(self: *Self) [*c]u8 {
+        return @ptrCast([*c]u8, self);
+    }
 };
 
 pub const AtomSequenceIterator = struct {
@@ -127,3 +148,21 @@ pub const AtomSequenceIterator = struct {
         return if (self.last) |l| AtomEvent.init(l) else null;
     }
 };
+
+pub fn AtomOf(comptime T: type, atom_type: []const u8) type {
+    return extern struct {
+        pub const __atom_type = atom_type;
+
+        atom: Atom,
+        body: T
+    };
+}
+
+pub const AtomInt = AtomOf(i32, c.LV2_ATOM__Int);
+pub const AtomLong = AtomOf(i64, c.LV2_ATOM__Long);
+pub const AtomFloat = AtomOf(f32, c.LV2_ATOM__Float);
+pub const AtomDouble = AtomOf(f64, c.LV2_ATOM__Double);
+pub const AtomBool = AtomOf(bool, c.LV2_ATOM__Bool);
+pub const AtomURID = AtomOf(u32, c.LV2_ATOM__URID);
+pub const AtomString = AtomOf([*:0]const u8, c.LV2_ATOM__String);
+pub const AtomPath = AtomOf([*:0]const u8, c.LV2_ATOM__Path);

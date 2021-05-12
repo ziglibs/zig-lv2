@@ -71,7 +71,7 @@ plug:spring
 		lv2:UtilityPlugin ;
 	lv2:binary <params.dll>;
 
-	doap:name "Parmas" ;
+	doap:name "Params" ;
 	doap:license <http://opensource.org/licenses/isc> ;
 	
 	lv2:project <http://lv2plug.in/ns/lv2> ;

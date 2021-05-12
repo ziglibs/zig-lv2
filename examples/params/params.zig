@@ -9,10 +9,11 @@ pub const URIs = struct {
     atom_event_transfer: u32,
     midi_event: u32,
     patch_set: u32,
+    patch_subject: u32,
     patch_property: u32,
     patch_value: u32,
 
-    pub fn map(self: *@This(), map_: lv2.Map) void {
+    pub fn map(self: *@This(), map_: *lv2.URIDMap) void {
         self.atom_path = map_.map(lv2.c.LV2_ATOM__Path);
         self.atom_resource = map_.map(lv2.c.LV2_ATOM__Resource);
         self.atom_sequence = map_.map(lv2.c.LV2_ATOM__Sequence);
@@ -20,6 +21,7 @@ pub const URIs = struct {
         self.atom_event_transfer = map_.map(lv2.c.LV2_ATOM__eventTransfer);
         self.midi_event = map_.map(lv2.c.LV2_MIDI__MidiEvent);
         self.patch_set = map_.map(lv2.c.LV2_PATCH__Set);
+        self.patch_subject = map_.map(lv2.c.LV2_PATCH__subject);
         self.patch_property = map_.map(lv2.c.LV2_PATCH__property);
         self.patch_value = map_.map(lv2.c.LV2_PATCH__value);
     }
@@ -45,16 +47,15 @@ pub const Params = lv2.Plugin{
         out: *lv2.AtomSequence,
 
         // Features
-        map: lv2.Map,
-        unmap: lv2.Unmap,
+        map: *lv2.URIDMap,
+        unmap: *lv2.URIDUnmap,
+        forge: lv2.AtomForge,
 
         // URIs
         uris: URIs,
 
         // State
-        state_manager: StateManager,
-
-        debug_file: std.fs.File
+        state_manager: StateManager
     },
 };
 
@@ -75,32 +76,72 @@ fn instantiate (
     bundle_path: []const u8,
     features: lv2.Features
 ) anyerror!void {
-    handle.map = features.query(lv2.Map).?;
-    handle.unmap = features.query(lv2.Unmap).?;
+    handle.map = features.query(lv2.URIDMap).?;
+    handle.unmap = features.query(lv2.URIDUnmap).?;
+    handle.forge.init(handle.map);
 
     handle.uris.map(handle.map);
     handle.state_manager.map(Params.uri, handle.map);
 }
 
 fn activate(handle: *Params.Handle) void {
-    handle.debug_file = std.fs.cwd().createFile("C:/Programming/Zig/zig-lv2/log.a", .{}) catch {std.os.exit(1);};
 }
 
 fn deactivate(handle: *Params.Handle) void {
-    handle.debug_file.close();
+    // debug_file.close();
+}
+
+fn log(comptime f: []const u8, a: anytype) void {
+    var debug_file = std.fs.cwd().createFile("C:/Programming/Zig/zig-lv2/log.b", .{}) catch {std.os.exit(1);};
+    debug_file.writer().print(f, a) catch {};
 }
 
 fn run(handle: *Params.Handle, samples: u32) void {
+    handle.forge.setBuffer(handle.out.toBuffer(), handle.out.atom.size);
+    
+    var out_frame = std.mem.zeroes(lv2.AtomForgeFrame);
+    _ = handle.forge.writeSequenceHead(&out_frame, 0);
+
     var iter = handle.in.iterator();
     while (iter.next()) |event| {
-        var object = event.toAtomObject();
-        if (object.body.otype == handle.uris.patch_set) {
-            handle.debug_file.writer().print("{}\n", .{object}) catch {};
-        }
+        @panic("B");
+        // var obj = event.toAtomObject();
+        // if (obj.body.kind == handle.uris.patch_set) {
+        //     var subject: ?*lv2.AtomURID = null;
+        //     var property: ?*lv2.AtomURID = null;
+        //     var value: ?*lv2.Atom = null;
+
+        //     obj.query(&[_]lv2.AtomObjectQuery{
+        //         .{ .key = handle.uris.patch_subject, .value = @ptrCast(*?*lv2.Atom, &subject) },
+        //         .{ .key = handle.uris.patch_property, .value = @ptrCast(*?*lv2.Atom, &property) },
+        //         .{ .key = handle.uris.patch_value, .value = &value }
+        //     });
+
+        //     handle.state_manager.setParameter(property.?.body, value.?);
+        // }
     }
+
+    handle.forge.pop(&out_frame);
+    // @panic("Empty");
 }
 
 fn extensionData(uri: []const u8) ?*c_void {
     if (StateManager.extensionData(uri)) |ext| return ext;
     return null;
+}
+
+pub fn panic(msg: []const u8, error_return_trace: ?*std.builtin.StackTrace) noreturn {
+    var debug_file = std.fs.cwd().createFile("C:/Programming/Zig/zig-lv2/log.a", .{}) catch {std.os.exit(1);};
+    debug_file.writer().writeAll(msg) catch {};
+    
+    const debug_info = std.debug.getSelfDebugInfo() catch |err| {
+        debug_file.writer().print("Unable to dump stack trace: Unable to open debug info: {s}\n", .{@errorName(err)}) catch std.process.exit(1);
+        std.process.exit(1);
+    };
+    std.debug.writeCurrentStackTrace(debug_file.writer(), std.debug.getSelfDebugInfo() catch std.os.exit(1), std.debug.detectTTYConfig(), @returnAddress()) catch |err| {
+        debug_file.writer().print("Unable to dump stack trace: {s}\n", .{@errorName(err)}) catch std.process.exit(1);
+        std.process.exit(1);
+    };
+    
+    std.process.exit(1);
 }

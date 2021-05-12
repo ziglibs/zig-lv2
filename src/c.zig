@@ -7,6 +7,7 @@ pub usingnamespace @cImport({
 
     @cInclude("lv2/atom/atom.h");
     @cInclude("lv2/atom/util.h");
+    @cInclude("lv2/atom/forge.h");
 
     @cInclude("lv2/midi/midi.h");
     @cInclude("lv2/patch/patch.h");

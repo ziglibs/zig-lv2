@@ -20,14 +20,14 @@ pub const Features = struct {
         };
     }
 
-    pub fn query(self: Self, comptime T: type) ?T {
+    pub fn query(self: Self, comptime T: type) ?*T {
         return queryFeature(self.features, T);
     }
 };
 
 pub fn getFeatureData(features: []const c.LV2_Feature, uri: []const u8) ?*c_void {
     for (features) |filled_feat| {
-        if (std.mem.eql(u8, uri, std.mem.span(filled_feat.URI))) {
+        if (filled_feat.URI != null and std.mem.eql(u8, uri, std.mem.span(filled_feat.URI))) {
             if (filled_feat.data) |dd| return dd;
         }
     }
@@ -35,6 +35,6 @@ pub fn getFeatureData(features: []const c.LV2_Feature, uri: []const u8) ?*c_void
     return null;
 }
 
-pub fn queryFeature(features: []const c.LV2_Feature, comptime T: type) ?T {
+pub fn queryFeature(features: []const c.LV2_Feature, comptime T: type) ?*T {
     return @field(T, "fromData")(getFeatureData(features, @field(T, "toURI")()) orelse return null);
 }

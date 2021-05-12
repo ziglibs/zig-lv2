@@ -45,9 +45,10 @@ pub fn StateManager(comptime State: type) type {
         state_urid_map: SM,
         state_type_map: SM,
 
-        pub fn map(self: *Self, comptime uri: []const u8, map_: lv2.Map) void {
+        pub fn map(self: *Self, comptime uri: []const u8, map_: *lv2.URIDMap) void {
             inline for (std.meta.fields(State)) |field| {
                 @field(self.state_urid_map, field.name) = map_.map(uri ++ "#" ++ field.name);
+                @field(self.state_type_map, field.name) = map_.map(field.field_type.__atom_type);
             }
         }
 
@@ -61,6 +62,18 @@ pub fn StateManager(comptime State: type) type {
             } else return null;
         }
         
+        pub fn setParameter(self: *Self, field_urid: lv2.URID, value: *lv2.Atom) void {
+            inline for (std.meta.fields(SM)) |s| {
+                if (@field(self.state_urid_map, s.name) == field_urid) {
+                    const to = *@TypeOf(@field(self.state, s.name));
+                    @field(self.state, s.name) = @ptrCast(to, @alignCast(@alignOf(to), value)).*;
+                    return;
+                }
+            }
+
+            @panic("Bad!!!");
+        }
+
         // State save method.
         // This is used in the usual way when called by the host to save plugin state,
         // but also internally for writing messages in the audio thread by passing a
@@ -75,17 +88,37 @@ pub fn StateManager(comptime State: type) type {
 
             inline for (std.meta.fields(State)) |field| {
                 var value = @field(state, field.name);
-                var key = @field(@fieldParentPtr(Self, "state", state).state_urid_map, field.name);
-                var t = @field(@fieldParentPtr(Self, "state", state).state_type_map, field.name);
 
-                status = store.?(handle, key, @ptrCast(*c_void, &value.body), value.atom.size, t, lv2.c.LV2_STATE_IS_POD | lv2.c.LV2_STATE_IS_PORTABLE);
+                status = store.?(
+                    handle,
+                    @field(@fieldParentPtr(Self, "state", state).state_urid_map, field.name),
+                    @intToPtr(*lv2.Atom, @ptrToInt(&value) + @sizeOf(lv2.Atom)),
+                    value.atom.size,
+                    @field(@fieldParentPtr(Self, "state", state).state_type_map, field.name), lv2.c.LV2_STATE_IS_POD | lv2.c.LV2_STATE_IS_PORTABLE
+                );
             }
 
             return status;
         }
 
-        pub fn restore (handle: lv2.c.LV2_Handle, ret: lv2.c.LV2_State_Retrieve_Function, state: lv2.c.LV2_State_Handle, flags: u32, features: [*c]const [*c]const lv2.c.LV2_Feature) callconv(.C) lv2.c.LV2_State_Status {
-            return @intToEnum(lv2.c.LV2_State_Status, 0);
+        pub fn restore (handle: lv2.c.LV2_Handle, retrieve: lv2.c.LV2_State_Retrieve_Function, state_handle: lv2.c.LV2_State_Handle, flags: u32, features: [*c]const [*c]const lv2.c.LV2_Feature) callconv(.C) lv2.c.LV2_State_Status {
+            var state = @ptrCast(*State, @alignCast(@alignOf(*State), state_handle));
+            var map_path = lv2.getFeatureData(@ptrCast(*const []lv2.c.LV2_Feature, features).*, lv2.c.LV2_STATE__mapPath).?;
+            var status = @intToEnum(lv2.c.LV2_State_Status, 0);
+            
+            inline for (std.meta.fields(State)) |field| {
+                var key = @field(@fieldParentPtr(Self, "state", state).state_urid_map, field.name);
+
+                var vsize: usize = 0;
+                var vtype: u32  = 0;
+                var vflags: u32 = 0;
+
+                if (retrieve.?(handle, key, &vsize, &vtype, &vflags)) |v|
+                    {}
+                else status = @intToEnum(lv2.c.LV2_State_Status, 4);
+            }
+
+            return status;
         }
     };
 }

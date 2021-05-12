@@ -4,7 +4,7 @@ pub const c = @import("c.zig");
 pub usingnamespace @import("urid.zig");
 
 pub usingnamespace @import("atom/atom.zig");
-pub usingnamespace @import("atom/types.zig");
+pub usingnamespace @import("atom/forge.zig");
 
 pub usingnamespace @import("state.zig");
 pub usingnamespace @import("utils.zig");
@@ -60,9 +60,7 @@ pub const Plugin = struct {
                     if (i == port) {
                         if (@typeInfo(field.field_type) != .Pointer) {
                             if (@hasDecl(field.field_type, "connectPort")) @field(@field(hnd, field.name), "connectPort")(data);
-                        } else {
-                            @field(hnd, field.name) = @ptrCast(field.field_type, @alignCast(@alignOf(field.field_type), data));
-                        }
+                        } else @field(hnd, field.name) = @ptrCast(field.field_type, @alignCast(@alignOf(field.field_type), data));
                     }
                 }
             }

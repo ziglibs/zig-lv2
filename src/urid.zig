@@ -1,14 +1,18 @@
 const c = @import("c.zig");
 
-pub const Map = struct {
-    const Self = @This();
-    
-    map_internal: ?*c.LV2_URID_Map = null,
+pub const URID = u32;
 
-    pub fn fromData(data: *c_void) Self {
-        return Self{
-            .map_internal = @ptrCast(*c.LV2_URID_Map, @alignCast(@alignOf(*c.LV2_URID_Map), data))
-        };
+pub const MapHandle = ?*c_void;
+pub const UnmapHandle = ?*c_void;
+
+pub const URIDMap = extern struct {
+    const Self = @This();
+
+    handle: MapHandle,
+    map_: ?fn (MapHandle, [*c]const u8) callconv(.C) URID,
+
+    pub fn fromData(data: *c_void) *Self {
+        return @ptrCast(*Self, @alignCast(@alignOf(*Self), data));
     }
 
     pub fn toURI() []const u8 {
@@ -16,19 +20,18 @@ pub const Map = struct {
     }
 
     pub fn map(self: Self, uri: []const u8) u32 {
-        return self.map_internal.?.map.?(self.map_internal.?.handle, @ptrCast([*c]const u8, uri));
+        return self.map_.?(self.handle, @ptrCast([*c]const u8, uri));        
     }
 };
 
-pub const Unmap = struct {
+pub const URIDUnmap = extern struct {
     const Self = @This();
 
-    unmap_internal: ?*c.LV2_URID_Unmap = null,
+    handle: UnmapHandle,
+    unmap_: ?fn (UnmapHandle, URID) callconv(.C) [*c]const u8,
 
-    pub fn fromData(data: *c_void) Self {
-        return Self{
-            .unmap_internal = @ptrCast(*c.LV2_URID_Unmap, @alignCast(@alignOf(*c.LV2_URID_Unmap), data))
-        };
+    pub fn fromData(data: *c_void) *Self {
+        return @ptrCast(*Self, @alignCast(@alignOf(*Self), data));
     }
 
     pub fn toURI() []const u8 {
@@ -36,7 +39,6 @@ pub const Unmap = struct {
     }
 
     pub fn unmap(self: Self, mapped: u32) []const u8 {
-        return self.unmap_internal.?.unmap.?(self.unmap_internal.?.handle, @ptrCast([*c]const u8, mapped));
+        return self.unmap_.?(self.handle, mapped);        
     }
 };
-
